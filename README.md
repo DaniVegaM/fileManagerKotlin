@@ -45,16 +45,6 @@ Porque nos pareció útil y queríamos hacer algo práctico para Android, sin de
 
 ---
 
-## 📸 Algunas capturas
-
-<div align="center">
-<img alt="App image" src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" width="30%">
-<img alt="App image" src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" width="30%">
-<img alt="App image" src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png" width="30%">
-</div>
-
----
-
 ## 📝 Notas finales
 
 Este proyecto no es profesional ni pretende competir con otros administradores de archivos. Solo queríamos aprender, divertirnos y hacer algo útil. Si quieres probarlo o mejorar alguna parte, ¡adelante!
