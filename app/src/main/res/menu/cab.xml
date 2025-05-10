@@ -43,6 +43,16 @@
         android:title="@string/unhide"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/cab_protect"
+        android:icon="@drawable/ic_lock_vector"
+        android:title="@string/protect"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/cab_unprotect"
+        android:icon="@drawable/ic_unlock_vector"
+        android:title="@string/unprotect"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/cab_create_shortcut"
         android:showAsAction="never"
         android:title="@string/create_shortcut"

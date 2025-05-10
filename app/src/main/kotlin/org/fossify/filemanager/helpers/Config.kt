@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import org.fossify.commons.extensions.getInternalStoragePath
 import org.fossify.commons.helpers.BaseConfig
+import org.fossify.commons.helpers.SORT_DESCENDING
 import java.io.File
 import java.util.Locale
 
@@ -121,4 +122,87 @@ class Config(context: Context) : BaseConfig(context) {
     var wasStorageAnalysisTabAdded: Boolean
         get() = prefs.getBoolean(WAS_STORAGE_ANALYSIS_TAB_ADDED, false)
         set(wasStorageAnalysisTabAdded) = prefs.edit().putBoolean(WAS_STORAGE_ANALYSIS_TAB_ADDED, wasStorageAnalysisTabAdded).apply()
+        
+    var enableShakeToggleSorting: Boolean
+        get() = prefs.getBoolean(ENABLE_SHAKE_TOGGLE_SORTING, true)
+        set(enableShakeToggleSorting) = prefs.edit().putBoolean(ENABLE_SHAKE_TOGGLE_SORTING, enableShakeToggleSorting).apply()
+        
+    /**
+     * Lista de elementos protegidos
+     */
+    var protectedItems: Set<String>
+        get() = prefs.getStringSet(PROTECTED_ITEMS, HashSet<String>()) ?: HashSet()
+        set(protectedItems) = prefs.edit().putStringSet(PROTECTED_ITEMS, protectedItems).apply()
+    
+    /**
+     * Tipo de protección: PROTECTION_FINGERPRINT o PROTECTION_PIN
+     */
+    var protectionType: Int
+        get() = prefs.getInt(PROTECTION_TYPE, PROTECTION_FINGERPRINT)
+        set(protectionType) = prefs.edit().putInt(PROTECTION_TYPE, protectionType).apply()
+    
+    /**
+     * PIN para protección de elementos (solo si se usa PROTECTION_PIN)
+     */
+    var protectionPin: String
+        get() = prefs.getString(PROTECTION_PIN, "") ?: ""
+        set(protectionPin) = prefs.edit().putString(PROTECTION_PIN, protectionPin).apply()
+    
+    /**
+     * Indica si la protección de elementos está activada globalmente
+     */
+    var isProtectionEnabled: Boolean
+        get() = prefs.getBoolean(PROTECTION_ENABLED, true)
+        set(isProtectionEnabled) = prefs.edit().putBoolean(PROTECTION_ENABLED, isProtectionEnabled).apply()
+    
+    /**
+     * Verifica si un elemento está protegido
+     */
+    fun isItemProtected(path: String): Boolean {
+        // Si la protección está desactivada, retorna falso sin importar si el elemento está en la lista
+        if (!isProtectionEnabled) {
+            return false
+        }
+        return protectedItems.contains(path)
+    }
+    
+    /**
+     * Añade un elemento a la lista de protegidos
+     */
+    fun addProtectedItem(path: String) {
+        val currentProtectedItems = HashSet<String>(protectedItems)
+        currentProtectedItems.add(path)
+        protectedItems = currentProtectedItems
+    }
+    
+    /**
+     * Elimina un elemento de la lista de protegidos
+     */
+    fun removeProtectedItem(path: String) {
+        val currentProtectedItems = HashSet<String>(protectedItems)
+        currentProtectedItems.remove(path)
+        protectedItems = currentProtectedItems
+    }
+    
+    /**
+     * Invierte el orden de clasificación (ascendente/descendente) para la ruta dada
+     * @param path La ruta de la carpeta para invertir el orden
+     */
+    fun toggleSortOrder(path: String) {
+        val currentSorting = getFolderSorting(path)
+        val newSorting = if (currentSorting and SORT_DESCENDING != 0) {
+            // Si es descendente, quitamos el flag SORT_DESCENDING
+            currentSorting and SORT_DESCENDING.inv()
+        } else {
+            // Si es ascendente, añadimos el flag SORT_DESCENDING
+            currentSorting or SORT_DESCENDING
+        }
+        
+        // Guardamos el nuevo orden
+        if (hasCustomSorting(path)) {
+            saveCustomSorting(path, newSorting)
+        } else {
+            sorting = newSorting
+        }
+    }
 }

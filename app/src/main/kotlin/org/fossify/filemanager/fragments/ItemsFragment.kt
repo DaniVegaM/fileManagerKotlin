@@ -19,6 +19,7 @@ import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.ItemsFragmentBinding
 import org.fossify.filemanager.dialogs.CreateNewItemDialog
+import org.fossify.filemanager.dialogs.ItemAuthenticationDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.helpers.MAX_COLUMN_COUNT
@@ -288,10 +289,27 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet) : MyViewPagerF
     }
 
     private fun itemClicked(item: FileDirItem) {
-        if (item.isDirectory) {
-            openDirectory(item.path)
+        val isProtected = context?.config?.isItemProtected(item.path) == true
+        
+        if (isProtected) {
+            // Si el elemento está protegido, mostrar el diálogo de autenticación
+            ItemAuthenticationDialog(activity as BaseSimpleActivity) { success ->
+                if (success) {
+                    // Si la autenticación es exitosa, abrir el elemento
+                    if (item.isDirectory) {
+                        openDirectory(item.path)
+                    } else {
+                        clickedPath(item.path)
+                    }
+                }
+            }
         } else {
-            clickedPath(item.path)
+            // Si no está protegido, abrir directamente
+            if (item.isDirectory) {
+                openDirectory(item.path)
+            } else {
+                clickedPath(item.path)
+            }
         }
     }
 

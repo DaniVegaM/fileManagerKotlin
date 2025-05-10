@@ -5,6 +5,8 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
 import android.graphics.drawable.Drawable
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
@@ -47,24 +49,14 @@ import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.updateBottomTabItemColors
 import org.fossify.commons.extensions.viewBinding
-import org.fossify.commons.helpers.LICENSE_AUTOFITTEXTVIEW
-import org.fossify.commons.helpers.LICENSE_GESTURE_VIEWS
-import org.fossify.commons.helpers.LICENSE_GLIDE
-import org.fossify.commons.helpers.LICENSE_PATTERN
-import org.fossify.commons.helpers.LICENSE_REPRINT
-import org.fossify.commons.helpers.LICENSE_ZIP4J
-import org.fossify.commons.helpers.PERMISSION_WRITE_STORAGE
-import org.fossify.commons.helpers.TAB_FILES
-import org.fossify.commons.helpers.TAB_RECENT_FILES
-import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
-import org.fossify.commons.helpers.VIEW_TYPE_GRID
-import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.helpers.isRPlus
+import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FAQItem
 import org.fossify.commons.models.RadioItem
 import org.fossify.commons.models.Release
 import org.fossify.filemanager.BuildConfig
 import org.fossify.filemanager.R
+import org.fossify.filemanager.activities.SettingsActivity
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ViewPagerAdapter
 import org.fossify.filemanager.databinding.ActivityMainBinding
 import org.fossify.filemanager.dialogs.ChangeSortingDialog
@@ -78,6 +70,7 @@ import org.fossify.filemanager.fragments.RecentsFragment
 import org.fossify.filemanager.fragments.StorageFragment
 import org.fossify.filemanager.helpers.MAX_COLUMN_COUNT
 import org.fossify.filemanager.helpers.RootHelpers
+import org.fossify.filemanager.helpers.ShakeDetector
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import java.io.File
 
@@ -97,6 +90,11 @@ class MainActivity : SimpleActivity() {
     private var mStoredDateFormat = ""
     private var mStoredTimeFormat = ""
     private var mStoredShowTabs = 0
+    
+    // Componentes para el detector de agitado
+    private lateinit var mSensorManager: SensorManager
+    private lateinit var mAccelerometer: Sensor
+    private lateinit var mShakeDetector: ShakeDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
         isMaterialActivity = true
@@ -125,6 +123,42 @@ class MainActivity : SimpleActivity() {
             checkWhatsNewDialog()
             checkIfRootAvailable()
             checkInvalidFavorites()
+        }
+        
+        // Inicializar el detector de agitado
+        setupShakeDetector()
+    }
+    
+    /**
+     * Configura el detector de agitado para cambiar el orden de visualización
+     */
+    private fun setupShakeDetector() {
+        // Obtenemos el servicio de sensores
+        mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!!
+        
+        // Inicializamos el detector de agitado
+        mShakeDetector = ShakeDetector().apply {
+            setOnShakeListener(object : ShakeDetector.OnShakeListener {
+                override fun onShake() {
+                    if (config.enableShakeToggleSorting) {
+                        // Cambiamos el orden de visualización solo si la función está habilitada
+                        val currentFragment = getCurrentFragment()
+                        if (currentFragment is ItemsFragment) {
+                            // Invertimos el orden de clasificación
+                            config.toggleSortOrder(currentFragment.currentPath)
+                            
+                            // Refrescamos la visualización
+                            currentFragment.refreshFragment()
+                            
+                            // Mostramos un mensaje al usuario
+                            val isDescending = config.getFolderSorting(currentFragment.currentPath) and SORT_DESCENDING != 0
+                            val messageResId = if (isDescending) R.string.sorted_descending else R.string.sorted_ascending
+                            toast(messageResId)
+                        }
+                    }
+                }
+            })
         }
     }
 
@@ -159,12 +193,22 @@ class MainActivity : SimpleActivity() {
         if (binding.mainViewPager.adapter == null) {
             initFragments()
         }
+        
+        // Registrar el sensor de acelerómetro para detectar agitados
+        if (::mSensorManager.isInitialized && ::mAccelerometer.isInitialized && ::mShakeDetector.isInitialized) {
+            mSensorManager.registerListener(mShakeDetector, mAccelerometer, SensorManager.SENSOR_DELAY_UI)
+        }
     }
 
     override fun onPause() {
         super.onPause()
         storeStateVariables()
         config.lastUsedViewPagerPage = binding.mainViewPager.currentItem
+        
+        // Desregistrar el sensor de acelerómetro para ahorrar batería cuando la app no esté en primer plano
+        if (::mSensorManager.isInitialized && ::mShakeDetector.isInitialized) {
+            mSensorManager.unregisterListener(mShakeDetector)
+        }
     }
 
     override fun onDestroy() {
@@ -218,9 +262,11 @@ class MainActivity : SimpleActivity() {
 
             findItem(R.id.column_count).isVisible = currentViewType == VIEW_TYPE_GRID && currentFragment !is StorageFragment
 
-            findItem(R.id.more_apps_from_us).isVisible = !resources.getBoolean(R.bool.hide_google_relations)
+//            findItem(R.id.more_apps_from_us).isVisible = !resources.getBoolean(R.bool.hide_google_relations)
+            findItem(R.id.more_apps_from_us).isVisible = false
             findItem(R.id.settings).isVisible = !isCreateDocumentIntent
-            findItem(R.id.about).isVisible = !isCreateDocumentIntent
+//            findItem(R.id.about).isVisible = !isCreateDocumentIntent
+            findItem(R.id.about).isVisible = false
         }
     }
 

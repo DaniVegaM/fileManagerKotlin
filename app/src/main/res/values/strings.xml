@@ -56,6 +56,32 @@
     <!-- Settings -->
     <string name="enable_root_access">Enable root access</string>
     <string name="press_back_twice">Require pressing Back twice to leave the app</string>
+    
+    <!-- Protection -->
+    <string name="protect">Protect</string>
+    <string name="unprotect">Unprotect</string>
+    <string name="password_protect_item">Password protect item</string>
+    <string name="password_protect_items">Password protect items</string>
+    <string name="item_is_protected">This item is protected</string>
+    <string name="enter_pin">Enter PIN</string>
+    <string name="access_item">Access protected item</string>
+    <string name="fingerprint_authentication">Fingerprint authentication</string>
+    <string name="authenticate_to_access">Authenticate to access this item</string>
+    <string name="item_protection_setup">Item Protection</string>
+    <string name="choose_protection_method">Choose protection method</string>
+    <string name="manage_item_protection">Manage item protection</string>
+    <string name="protection_setup_successfully">Protection setup successfully</string>
+    <string name="fingerprint_setup_successfully">Fingerprint setup successfully</string>
+    <string name="pin_protection_setup">Set a 4-digit PIN</string>
+    <string name="fingerprint_protection_setup">Use your fingerprint to authenticate</string>
+    <string name="protection_type">Protection type</string>
+    <string name="manage_pin">Manage PIN</string>
+    <string name="pin_does_not_match">PINs do not match. Please try again.</string>
+    <string name="confirm_pin">Confirm PIN</string>
+    <string name="pin_changed_successfully">PIN changed successfully</string>
+    <string name="enable_item_protection">Enable item protection</string>
+    <string name="item_protection_method">Item protection method</string>
+    <string name="change_item_protection_method">Change protection method</string>
     <!--
         Haven't found some strings? There's more at
         https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res

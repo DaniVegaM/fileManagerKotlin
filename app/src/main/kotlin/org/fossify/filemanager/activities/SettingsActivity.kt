@@ -11,8 +11,10 @@ import org.fossify.commons.helpers.*
 import org.fossify.commons.models.RadioItem
 import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.ActivitySettingsBinding
+import org.fossify.filemanager.dialogs.ItemProtectionDialog
 import org.fossify.filemanager.dialogs.ManageVisibleTabsDialog
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.helpers.PROTECTION_PIN_CODE
 import org.fossify.filemanager.helpers.RootHelpers
 import java.util.Locale
 import kotlin.system.exitProcess
@@ -44,9 +46,12 @@ class SettingsActivity : SimpleActivity() {
         setupShowHidden()
         setupEnablePullToRefresh()
         setupPressBackTwice()
+        setupEnableShakeToggleSorting()
         setupHiddenItemPasswordProtection()
         setupAppPasswordProtection()
         setupFileDeletionPasswordProtection()
+        setupItemProtectionEnabled()
+        setupItemProtectionMethod()
         setupKeepLastModified()
         setupDeleteConfirmation()
         setupEnableRootAccess()
@@ -167,6 +172,16 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
+    private fun setupEnableShakeToggleSorting() {
+        binding.apply {
+            settingsEnableShakeToggleSorting.isChecked = config.enableShakeToggleSorting
+            settingsEnableShakeToggleSortingHolder.setOnClickListener {
+                settingsEnableShakeToggleSorting.toggle()
+                config.enableShakeToggleSorting = settingsEnableShakeToggleSorting.isChecked
+            }
+        }
+    }
+
     private fun setupHiddenItemPasswordProtection() {
         binding.settingsPasswordProtection.isChecked = config.isHiddenPasswordProtectionOn
         binding.settingsPasswordProtectionHolder.setOnClickListener {
@@ -230,6 +245,46 @@ class SettingsActivity : SimpleActivity() {
                     }
                 }
             }
+        }
+    }
+    
+    private fun setupItemProtectionEnabled() {
+        binding.settingsItemProtectionEnabled.isChecked = config.isProtectionEnabled
+        binding.settingsItemProtectionEnabledHolder.setOnClickListener {
+            binding.settingsItemProtectionEnabled.toggle()
+            config.isProtectionEnabled = binding.settingsItemProtectionEnabled.isChecked
+        }
+    }
+    
+    private fun setupItemProtectionMethod() {
+        updateItemProtectionMethodText()
+        binding.settingsItemProtectionMethodHolder.setOnClickListener {
+            val items = arrayListOf(
+                RadioItem(PROTECTION_FINGERPRINT, getString(R.string.fingerprint)),
+                RadioItem(PROTECTION_PIN_CODE, getString(R.string.pin))
+            )
+            
+            RadioGroupDialog(this@SettingsActivity, items, config.protectionType) {
+                config.protectionType = it as Int
+                updateItemProtectionMethodText()
+                
+                // Si ha seleccionado PIN y no hay uno configurado, mostrar diálogo de configuración
+                if (it == PROTECTION_PIN_CODE && config.protectionPin.isEmpty()) {
+                    ItemProtectionDialog(this@SettingsActivity) { success ->
+                        if (success) {
+                            ConfirmationDialog(this, "", R.string.pin_changed_successfully, R.string.ok, 0) { }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun updateItemProtectionMethodText() {
+        binding.settingsItemProtectionMethod.text = when (config.protectionType) {
+            PROTECTION_FINGERPRINT -> getString(R.string.fingerprint)
+            PROTECTION_PIN_CODE -> getString(R.string.pin)
+            else -> getString(R.string.fingerprint)
         }
     }
 

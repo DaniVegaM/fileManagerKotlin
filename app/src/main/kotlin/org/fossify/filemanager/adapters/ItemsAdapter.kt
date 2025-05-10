@@ -34,6 +34,7 @@ import net.lingala.zip4j.io.outputstream.ZipOutputStream
 import net.lingala.zip4j.model.LocalFileHeader
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.EncryptionMethod
+import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.FilePickerDialog
@@ -97,6 +98,8 @@ import org.fossify.filemanager.databinding.ItemFileDirListBinding
 import org.fossify.filemanager.databinding.ItemFileGridBinding
 import org.fossify.filemanager.databinding.ItemSectionBinding
 import org.fossify.filemanager.dialogs.CompressAsDialog
+import org.fossify.filemanager.dialogs.ItemAuthenticationDialog
+import org.fossify.filemanager.dialogs.ItemProtectionDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.isZipFile
@@ -104,12 +107,7 @@ import org.fossify.filemanager.extensions.setAs
 import org.fossify.filemanager.extensions.sharePaths
 import org.fossify.filemanager.extensions.toggleItemVisibility
 import org.fossify.filemanager.extensions.tryOpenPathIntent
-import org.fossify.filemanager.helpers.OPEN_AS_AUDIO
-import org.fossify.filemanager.helpers.OPEN_AS_IMAGE
-import org.fossify.filemanager.helpers.OPEN_AS_OTHER
-import org.fossify.filemanager.helpers.OPEN_AS_TEXT
-import org.fossify.filemanager.helpers.OPEN_AS_VIDEO
-import org.fossify.filemanager.helpers.RootHelpers
+import org.fossify.filemanager.helpers.*
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import java.io.BufferedInputStream
@@ -177,7 +175,23 @@ class ItemsAdapter(
             findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected()
 
             checkHideBtnVisibility(this)
+            checkProtectBtnVisibility(this)
         }
+    }
+
+    private fun checkProtectBtnVisibility(menu: Menu) {
+        var protectedCnt = 0
+        var unprotectedCnt = 0
+        getSelectedFileDirItems().map { it.path }.forEach {
+            if (config.isItemProtected(it)) {
+                protectedCnt++
+            } else {
+                unprotectedCnt++
+            }
+        }
+
+        menu.findItem(R.id.cab_protect).isVisible = unprotectedCnt > 0
+        menu.findItem(R.id.cab_unprotect).isVisible = protectedCnt > 0
     }
 
     override fun actionItemPressed(id: Int) {
@@ -192,6 +206,8 @@ class ItemsAdapter(
             R.id.cab_share -> shareFiles()
             R.id.cab_hide -> toggleFileVisibility(true)
             R.id.cab_unhide -> toggleFileVisibility(false)
+            R.id.cab_protect -> protectItems()
+            R.id.cab_unprotect -> unprotectItems()
             R.id.cab_create_shortcut -> createShortcut()
             R.id.cab_copy_path -> copyPath()
             R.id.cab_set_as -> setAs()
@@ -918,6 +934,15 @@ class ItemsAdapter(
                 itemName?.setTextColor(textColor)
                 itemName?.setTextSize(TypedValue.COMPLEX_UNIT_PX, if (isListViewType) fontSize else smallerFontSize)
 
+                // Mostrar/ocultar ícono de candado según si el elemento está protegido
+                val isProtected = config.isItemProtected(listItem.path)
+                if (isProtected && itemLock != null) {
+                    itemLock!!.beVisible()
+                    itemLock!!.applyColorFilter(textColor)
+                } else {
+                    itemLock?.beGone()
+                }
+
                 itemDetails?.setTextColor(textColor)
                 itemDetails?.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
 
@@ -1087,6 +1112,7 @@ class ItemsAdapter(
         val itemDetails: TextView?
         val itemDate: TextView?
         val itemSection: TextView?
+        val itemLock: ImageView? // Añadimos la propiedad para el ícono de candado
     }
 
     private class ItemSectionBindingAdapter(val binding: ItemSectionBinding) : ItemViewBinding {
@@ -1097,6 +1123,7 @@ class ItemsAdapter(
         override val itemDate: TextView? = null
         override val itemCheck: ImageView? = null
         override val itemSection: TextView = binding.itemSection
+        override val itemLock: ImageView? = null // No tiene candado
         override fun getRoot(): View = binding.root
     }
 
@@ -1108,7 +1135,7 @@ class ItemsAdapter(
         override val itemDate: TextView? = null
         override val itemCheck: ImageView? = null
         override val itemSection: TextView? = null
-
+        override val itemLock: ImageView? = null // No tiene candado
         override fun getRoot(): View = binding.root
     }
 
@@ -1120,7 +1147,7 @@ class ItemsAdapter(
         override val itemDate: TextView = binding.itemDate
         override val itemCheck: ImageView? = null
         override val itemSection: TextView? = null
-
+        override val itemLock: ImageView = binding.itemLock // Añadimos el candado
         override fun getRoot(): View = binding.root
     }
 
@@ -1132,7 +1159,7 @@ class ItemsAdapter(
         override val itemDate: TextView? = null
         override val itemCheck: ImageView = binding.itemCheck
         override val itemSection: TextView? = null
-
+        override val itemLock: ImageView = binding.itemLock // Añadimos el candado
         override fun getRoot(): View = binding.root
     }
 
@@ -1144,7 +1171,53 @@ class ItemsAdapter(
         override val itemDate: TextView? = null
         override val itemCheck: ImageView? = null
         override val itemSection: TextView? = null
-
+        override val itemLock: ImageView = binding.itemLock // Añadimos el candado
         override fun getRoot(): View = binding.root
+    }
+
+    private fun protectItems() {
+        val fileDirItems = getSelectedFileDirItems()
+        val paths = fileDirItems.asSequence().map { it.path }.toMutableList() as ArrayList<String>
+        
+        val messageId = if (paths.size == 1) R.string.password_protect_item else R.string.password_protect_items
+        val baseString = activity.getString(messageId)
+        val question = String.format(baseString, paths.size)
+        
+        // Si ya hay un PIN o huella configurado, protegemos directamente
+        if (config.protectionPin.isNotEmpty() || config.protectionType == PROTECTION_FINGERPRINT) {
+            paths.forEach { path ->
+                config.addProtectedItem(path)
+            }
+            finishActMode()
+            listener?.refreshFragment()
+            return
+        }
+        
+        // Si no hay protección configurada, mostramos el diálogo para configurarla
+        ItemProtectionDialog(activity as BaseSimpleActivity) { success ->
+            if (success) {
+                paths.forEach { path ->
+                    config.addProtectedItem(path)
+                }
+                finishActMode()
+                listener?.refreshFragment()
+            }
+        }
+    }
+
+    private fun unprotectItems() {
+        val fileDirItems = getSelectedFileDirItems()
+        val paths = fileDirItems.asSequence().map { it.path }.toMutableList() as ArrayList<String>
+        
+        // Verificar autenticación antes de desproteger
+        ItemAuthenticationDialog(activity as BaseSimpleActivity) { success ->
+            if (success) {
+                paths.forEach { path ->
+                    config.removeProtectedItem(path)
+                }
+                finishActMode()
+                listener?.refreshFragment()
+            }
+        }
     }
 }

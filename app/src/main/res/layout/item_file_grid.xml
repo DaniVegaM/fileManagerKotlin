@@ -52,5 +52,16 @@
             android:src="@drawable/ic_check_vector"
             android:visibility="gone" />
 
+        <ImageView
+            android:id="@+id/item_lock"
+            android:layout_width="@dimen/selection_check_size"
+            android:layout_height="@dimen/selection_check_size"
+            android:layout_alignStart="@+id/item_icon"
+            android:layout_alignParentTop="true"
+            android:layout_margin="@dimen/small_margin"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_lock_vector"
+            android:visibility="gone" />
+
     </RelativeLayout>
 </FrameLayout>

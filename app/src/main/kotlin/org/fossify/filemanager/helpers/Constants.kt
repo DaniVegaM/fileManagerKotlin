@@ -22,6 +22,15 @@ const val FILE_LANDSCAPE_COLUMN_CNT = "file_landscape_column_cnt"
 const val DISPLAY_FILE_NAMES = "display_file_names"
 const val SHOW_TABS = "show_tabs"
 const val WAS_STORAGE_ANALYSIS_TAB_ADDED = "was_storage_analysis_tab_added"
+const val ENABLE_SHAKE_TOGGLE_SORTING = "enable_shake_toggle_sorting"
+
+// Protección de archivos y carpetas
+const val PROTECTED_ITEMS = "protected_items"
+const val PROTECTION_TYPE = "protection_type"
+const val PROTECTION_PIN = "protection_pin"
+const val PROTECTION_FINGERPRINT = 0
+const val PROTECTION_PIN_CODE = 1
+const val PROTECTION_ENABLED = "protection_enabled"
 
 // open as
 const val OPEN_AS_DEFAULT = 0

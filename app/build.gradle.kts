@@ -116,4 +116,5 @@ dependencies {
     implementation(libs.gestureviews)
     implementation(libs.autofittextview)
     implementation(libs.zip4j)
+    implementation("androidx.biometric:biometric:1.1.0")
 }

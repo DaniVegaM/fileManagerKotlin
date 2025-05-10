@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="enable_shake_toggle_sorting">Enable shake to toggle sorting</string>
+    <string name="shake_toggle_sorting_summary">Shake device to toggle between ascending and descending sorting</string>
+    <string name="sorted_ascending">Sorted in ascending order</string>
+    <string name="sorted_descending">Sorted in descending order</string>
+</resources>
